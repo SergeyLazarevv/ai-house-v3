@@ -1,3 +1,1 @@
-from app.repositories.sms_repository import SmsRepository
-
-__all__ = ["SmsRepository"]
+__all__: list[str] = []

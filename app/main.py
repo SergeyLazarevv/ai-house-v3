@@ -12,9 +12,11 @@ from fastapi.responses import RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.config import AppConfig
+from app.logging_config import configure_logging
 from app.orchestration.graph import run_graph
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+configure_logging()
 
 app = FastAPI(
     title="ai-house-v3",
@@ -54,10 +56,12 @@ async def health():
 @app.get("/api/status")
 async def status():
     config = AppConfig.from_env()
+    pt = config.postgres_targets
     return {
         "llm": config.llm_status(),
         "provider": config.llm_provider,
-        "postgres_targets": list(config.postgres_targets.as_map().keys()),
+        "postgres_targets": list(pt.as_map().keys()),
+        "postgres_auth_configured": bool(pt.auth_dsn),
     }
 
 

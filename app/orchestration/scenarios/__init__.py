@@ -1,8 +1,15 @@
-"""Обратная совместимость: сценарии загружаются из плагинов."""
+"""Markdown-сценарии: каталог `*.md` в этой папке (см. `app.orchestration.scenario_library`)."""
 
 from __future__ import annotations
 
-import app.orchestration.plugins  # noqa: F401 — регистрация
-from app.orchestration.plugins.registry import load_scenarios_text
+from app.orchestration.scenario_library import (
+    build_supervisor_scenarios_text,
+    get_loaded_scenario,
+    load_scenario_library,
+)
 
-__all__ = ["load_scenarios_text"]
+__all__ = [
+    "build_supervisor_scenarios_text",
+    "get_loaded_scenario",
+    "load_scenario_library",
+]

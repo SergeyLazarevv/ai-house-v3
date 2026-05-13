@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 from contextlib import AsyncExitStack
 import json
+import os
 import re
+import shutil
 from typing import Any
 
 from mcp import ClientSession
@@ -45,12 +47,22 @@ def _mcp_content_to_text(content: list[Any]) -> str:
     return "\n".join(parts).strip()
 
 
-async def _query_one_via_mcp(alias: str, dsn: str, sql: str) -> dict[str, Any]:
-    params = StdioServerParameters(
-        command="npx",
-        args=["-y", "@modelcontextprotocol/server-postgres", dsn.strip()],
-        env=None,
-    )
+def _query_timeout_seconds() -> float:
+    raw = (os.getenv("DB_QUERY_TIMEOUT_SECONDS") or "5").strip()
+    try:
+        return max(0.1, float(raw))
+    except ValueError:
+        return 5.0
+
+
+async def _query_one_via_mcp(alias: str, dsn: str, sql: str, timeout: float) -> dict[str, Any]:
+    command = "npx"
+    args = ["-y", "@modelcontextprotocol/server-postgres", dsn.strip()]
+    if shutil.which("timeout"):
+        command = "timeout"
+        args = ["--kill-after=1s", f"{timeout:g}s", "npx", *args]
+
+    params = StdioServerParameters(command=command, args=args, env=None)
     try:
         async with AsyncExitStack() as stack:
             read, write = await stack.enter_async_context(stdio_client(params))
@@ -82,6 +94,25 @@ async def _query_one_via_mcp(alias: str, dsn: str, sql: str) -> dict[str, Any]:
         return {"alias": alias, "ok": False, "error": str(exc)}
 
 
+async def _query_one_with_timeout(alias: str, dsn: str, sql: str, timeout: float) -> dict[str, Any]:
+    started = asyncio.get_running_loop().time()
+    try:
+        result = await asyncio.wait_for(
+            _query_one_via_mcp(alias, dsn, sql, timeout),
+            timeout=timeout + 2,
+        )
+        elapsed = asyncio.get_running_loop().time() - started
+        if result.get("ok") is False and elapsed >= timeout:
+            result["error"] = f"Запрос к БД превысил таймаут {timeout:g} секунд"
+        return result
+    except TimeoutError:
+        return {
+            "alias": alias,
+            "ok": False,
+            "error": f"Запрос к БД превысил таймаут {timeout:g} секунд",
+        }
+
+
 async def run_multi_postgres_query(sql: str, targets: dict[str, str], task: str) -> str:
     if not _is_read_only_sql(sql):
         payload = {
@@ -98,7 +129,8 @@ async def run_multi_postgres_query(sql: str, targets: dict[str, str], task: str)
             ],
         }
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
-    jobs = [_query_one_via_mcp(alias, dsn, sql) for alias, dsn in targets.items()]
+    timeout = _query_timeout_seconds()
+    jobs = [_query_one_with_timeout(alias, dsn, sql, timeout) for alias, dsn in targets.items()]
     results = await asyncio.gather(*jobs)
     payload = {"task": task, "sql": sql, "targets": list(targets.keys()), "results": results}
     return json.dumps(payload, ensure_ascii=False, indent=2, default=str)

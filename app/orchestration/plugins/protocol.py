@@ -8,8 +8,8 @@ from app.config import AppConfig
 @runtime_checkable
 class InvestigationScenarioPlugin(Protocol):
     """
-    Плагин сценария расследования: markdown для супервизора, опциональный промпт синтеза, выполнение шага БД.
-    Новые сценарии добавляют класс с тем же контрактом и регистрируют в registry.
+    Контракт сценария: markdown для супервизора (или через scenario_library), опциональный промпт синтеза, шаг БД.
+    Типичный сценарий описывается в app/orchestration/scenarios/<id>.md без отдельного класса на сценарий.
     """
 
     scenario_id: str
@@ -30,6 +30,8 @@ class InvestigationScenarioPlugin(Protocol):
         task: str,
         config: AppConfig,
         slots: dict[str, Any],
+        *,
+        scenario_id: str | None = None,
     ) -> str:
-        """Один шаг read-only к БД по правилам сценария (или сообщение об ошибке/заглушке)."""
+        """Шаги read-only к БД по правилам сценария (или сообщение об ошибке/заглушке)."""
         ...

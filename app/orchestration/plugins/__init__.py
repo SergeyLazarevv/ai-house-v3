@@ -8,9 +8,9 @@ from app.orchestration.plugins.registry import (
     register_plugin,
 )
 
-# Регистрация плагинов при импорте пакета
-import app.orchestration.plugins.sms_delivery as _sms_delivery  # noqa: F401, E402
-import app.orchestration.plugins.test_investigation as _test_investigation  # noqa: F401, E402
+# Регистрация markdown-сценариев через scenario_library при первом обращении;
+# legacy register_plugin остаётся для редких исключений.
+import app.orchestration.plugins.registry as _registry  # noqa: F401, E402
 
 __all__ = [
     "InvestigationScenarioPlugin",

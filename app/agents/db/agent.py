@@ -24,6 +24,7 @@ class DbInvestigationAgent:
         if not plugin:
             return (
                 f"Запрос к БД не выполнен: сценарий {sid!r} не зарегистрирован. "
-                "Добавьте плагин в app/orchestration/plugins/ и register_plugin(...)."
+                "Добавьте файл app/orchestration/scenarios/<id>.md с frontmatter scenario_id "
+                "или зарегистрируйте legacy-плагин через register_plugin(...)."
             )
-        return await plugin.run_db(task, config, slots or {})
+        return await plugin.run_db(task, config, slots or {}, scenario_id=sid)

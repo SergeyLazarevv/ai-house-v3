@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from app.agents.db.agent import DbInvestigationAgent
 from app.config import AppConfig
-from app.orchestration.plugins import get_plugin
 from app.orchestration.prompts import build_synthesize_system_prompt
+from app.orchestration.scenario_library import get_synthesis_system_prompt
 from app.orchestration.state import GraphState
 from app.orchestration.supervisor import node_supervisor
 from app.shared.llm import build_llm
@@ -13,10 +13,7 @@ def _synthesis_system_prompt_for_state(state: GraphState) -> str:
     sid = (state.get("supervisor_scenario") or "").strip()
     if not sid:
         return build_synthesize_system_prompt()
-    plugin = get_plugin(sid)
-    if not plugin:
-        return build_synthesize_system_prompt()
-    custom = plugin.build_synthesis_system_prompt()
+    custom = get_synthesis_system_prompt(sid)
     return custom if custom else build_synthesize_system_prompt()
 
 

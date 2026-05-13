@@ -15,6 +15,7 @@ def _env_bool(name: str, default: bool = True) -> bool:
 class PostgresTargets:
     main_dsn: str | None
     billing_dsn: str | None
+    auth_dsn: str | None
 
     @classmethod
     def from_env(cls) -> "PostgresTargets":
@@ -25,7 +26,8 @@ class PostgresTargets:
             or ""
         ).strip() or None
         billing = (os.getenv("POSTGRES_MCP_DSN_BILLING") or "").strip() or None
-        return cls(main_dsn=main, billing_dsn=billing)
+        auth = (os.getenv("POSTGRES_MCP_DSN_AUTH") or "").strip() or None
+        return cls(main_dsn=main, billing_dsn=billing, auth_dsn=auth)
 
     def as_map(self) -> dict[str, str]:
         out: dict[str, str] = {}
@@ -34,6 +36,11 @@ class PostgresTargets:
         if self.billing_dsn:
             out["billing"] = self.billing_dsn
         return out
+
+    def auth_target_map(self) -> dict[str, str]:
+        if self.auth_dsn:
+            return {"auth": self.auth_dsn}
+        return {}
 
 
 @dataclass

@@ -6,7 +6,7 @@
 
 - FastAPI API: `/api/chat`, `/api/health`, `/api/status`
 - OpenAI-совместимый API: `/v1/models`, `/v1/chat/completions`
-- Базовый сценарий расследования: `app/orchestration/scenarios/test_investigation.md`
+- Базовый сценарий расследования: `app/orchestration/scenarios/test_investigation.md` (TOML frontmatter `+++` … `+++`, см. также `sms_delivery.md`)
 - DB-агент с MCP-подключением к нескольким Postgres источникам
 - OpenWebUI, подключенный к локальному API
 - Сертификаты в Docker (CA bundle + env + volume)
