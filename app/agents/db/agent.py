@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.config import AppConfig
-from app.orchestration.plugins import get_plugin
+from app.orchestration.scenario_registry import get_plugin
 
 
 class DbInvestigationAgent:
@@ -25,6 +25,6 @@ class DbInvestigationAgent:
             return (
                 f"Запрос к БД не выполнен: сценарий {sid!r} не зарегистрирован. "
                 "Добавьте файл app/orchestration/scenarios/<id>.md с frontmatter scenario_id "
-                "или зарегистрируйте legacy-плагин через register_plugin(...)."
+                "и настройте для него domain MCP executor."
             )
         return await plugin.run_db(task, config, slots or {}, scenario_id=sid)

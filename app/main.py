@@ -56,12 +56,13 @@ async def health():
 @app.get("/api/status")
 async def status():
     config = AppConfig.from_env()
-    pt = config.postgres_targets
     return {
         "llm": config.llm_status(),
         "provider": config.llm_provider,
-        "postgres_targets": list(pt.as_map().keys()),
-        "postgres_auth_configured": bool(pt.auth_dsn),
+        "mcp": {
+            "auth_url": config.mcp_auth_url,
+            "sms_url": config.mcp_sms_url,
+        },
     }
 
 

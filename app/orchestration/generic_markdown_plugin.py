@@ -3,23 +3,17 @@ from __future__ import annotations
 from typing import Any
 
 from app.config import AppConfig
-from app.orchestration.generic_db_executor import run_markdown_scenario_db
 from app.orchestration.scenario_library import get_loaded_scenario
+from app.orchestration.sms_tool_executor import run_sms_delivery_tools
 
 
 class GenericMarkdownScenarioPlugin:
     """
     Единый плагин для всех сценариев из markdown (см. app/orchestration/scenarios/).
-    Реализация run_db делегирует промпт-only исполнителю.
+    DB-шаги выполняются только через доменные MCP tools.
     """
 
     scenario_id = "__markdown__"
-
-    def load_scenario_markdown(self) -> str:
-        return ""
-
-    def build_synthesis_system_prompt(self) -> str | None:
-        return None
 
     async def run_db(
         self,
@@ -36,12 +30,9 @@ class GenericMarkdownScenarioPlugin:
                 f"Запрос к БД не выполнен: сценарий {sid!r} не найден. "
                 "Добавьте файл app/orchestration/scenarios/<id>.md с frontmatter scenario_id."
             )
-        return await run_markdown_scenario_db(
-            scenario=sc,
-            task=task,
-            config=config,
-            slots=slots,
-        )
+        if sid == "sms_delivery":
+            return await run_sms_delivery_tools(config=config, slots=slots)
+        return f"Запрос к MCP не выполнен: для сценария {sid!r} не настроен domain tool executor."
 
 
 generic_markdown_plugin = GenericMarkdownScenarioPlugin()

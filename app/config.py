@@ -12,38 +12,6 @@ def _env_bool(name: str, default: bool = True) -> bool:
 
 
 @dataclass
-class PostgresTargets:
-    main_dsn: str | None
-    billing_dsn: str | None
-    auth_dsn: str | None
-
-    @classmethod
-    def from_env(cls) -> "PostgresTargets":
-        main = (
-            os.getenv("POSTGRES_MCP_DSN_MAIN")
-            or os.getenv("POSTGRES_MCP_DSN")
-            or os.getenv("POSTGRES_URL")
-            or ""
-        ).strip() or None
-        billing = (os.getenv("POSTGRES_MCP_DSN_BILLING") or "").strip() or None
-        auth = (os.getenv("POSTGRES_MCP_DSN_AUTH") or "").strip() or None
-        return cls(main_dsn=main, billing_dsn=billing, auth_dsn=auth)
-
-    def as_map(self) -> dict[str, str]:
-        out: dict[str, str] = {}
-        if self.main_dsn:
-            out["main"] = self.main_dsn
-        if self.billing_dsn:
-            out["billing"] = self.billing_dsn
-        return out
-
-    def auth_target_map(self) -> dict[str, str]:
-        if self.auth_dsn:
-            return {"auth": self.auth_dsn}
-        return {}
-
-
-@dataclass
 class AppConfig:
     yandex_api_key: str | None
     yandex_catalog_id: str | None
@@ -51,7 +19,8 @@ class AppConfig:
     llm_provider: str
     graph_supervisor_max_steps: int
     agent_db_enabled: bool
-    postgres_targets: PostgresTargets
+    mcp_auth_url: str
+    mcp_sms_url: str
 
     @classmethod
     def from_env(cls) -> "AppConfig":
@@ -62,7 +31,8 @@ class AppConfig:
             llm_provider=(os.getenv("LLM_PROVIDER") or "yandex").strip().lower(),
             graph_supervisor_max_steps=max(1, int(os.getenv("GRAPH_SUPERVISOR_MAX_STEPS", "6"))),
             agent_db_enabled=_env_bool("AGENT_DB_ENABLED", True),
-            postgres_targets=PostgresTargets.from_env(),
+            mcp_auth_url=(os.getenv("MCP_AUTH_URL") or "http://auth-mcp:8000/mcp").strip(),
+            mcp_sms_url=(os.getenv("MCP_SMS_URL") or "http://sms-mcp:8000/mcp").strip(),
         )
 
     def llm_status(self) -> str:
