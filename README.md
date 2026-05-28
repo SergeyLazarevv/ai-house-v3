@@ -1,42 +1,41 @@
 # ai-house-v3
 
-Минимальный AI-агент для расследований с Yandex AI, несколькими Postgres-источниками и OpenWebUI.
+AI-агент для расследования SMS: Yandex Responses API + MCP (auth, sms).
 
-## Что внутри
+По образцу [advanced-assistant](~/projects/advanced-assistant): один класс `Agent`, промпт в файле, инструменты из MCP.
 
-- FastAPI API: `/api/chat`, `/api/health`, `/api/status`
-- OpenAI-совместимый API: `/v1/models`, `/v1/chat/completions`
-- Базовый сценарий расследования: `app/orchestration/scenarios/test_investigation.md` (TOML frontmatter `+++` … `+++`, см. также `sms_delivery.md`)
-- DB-агент с MCP-подключением к нескольким Postgres источникам
-- OpenWebUI, подключенный к локальному API
-- Сертификаты в Docker (CA bundle + env + volume)
+## Структура
 
-## Запуск одной командой
-
-```bash
-docker compose up -d --build
+```
+app/
+  agent.py       — цикл agent → tool call → ответ (как advanced-assistant)
+  prompt.md      — инструкции для модели (редактируете только это)
+  mcp/           — клиент MCP + регистрация tools
+  mcp_services/  — auth-mcp, sms-mcp (Postgres)
+  main.py        — FastAPI
 ```
 
-## Адреса
+## Как работает
 
-- API: [http://localhost:8030](http://localhost:8030)
-- Swagger: [http://localhost:8030/docs](http://localhost:8030/docs)
-- OpenWebUI: [http://localhost:3010](http://localhost:3010)
+1. `list_tools()` на auth-mcp и sms-mcp → схемы параметров
+2. Yandex Responses API получает промпт + tools
+3. Модель сама вызывает tools и формирует ответ
 
-## Быстрый smoke-check
+## Запуск
 
 ```bash
-curl -s http://localhost:8030/api/health
-curl -s http://localhost:8030/api/status
-curl -s -X POST http://localhost:8030/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message":"Проведи тестовое расследование по user_id=123"}'
+docker compose up --build
 ```
 
-## Переменные окружения
+- API: http://localhost:8030
+- OpenWebUI: http://localhost:3010
 
-См. `.env.example`. В локальном `.env` уже проставлены реальные `YANDEX_*` из `ai-house`, как было запрошено.
+## Настройка
 
-Для Postgres используется MCP-схема как в LogsAi:
-- агент поднимает `npx @modelcontextprotocol/server-postgres <DSN>` для каждого источника;
-- вызов SQL идёт через MCP tool (`query`).
+`.env`:
+- `LLM_PROVIDER` — `yandex` (по умолчанию) или `openai` (ChatGPT)
+- Yandex: `YANDEX_API_KEY`, `YANDEX_CATALOG_ID`, `YANDEX_MODEL`
+- OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL` (опционально `OPENAI_BASE_URL` для Azure/прокси)
+- MCP: `MCP_AUTH_URL`, `MCP_SMS_URL`
+
+Поведение агента — в `app/prompt.md`.

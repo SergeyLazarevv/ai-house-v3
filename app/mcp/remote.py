@@ -22,6 +22,22 @@ def _content_to_data(content: list[Any]) -> Any:
         return raw
 
 
+async def list_remote_tools(url: str) -> list[dict[str, Any]]:
+    async with streamablehttp_client(url) as streams:
+        read, write = streams[0], streams[1]
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.list_tools()
+            return [
+                {
+                    "name": tool.name,
+                    "description": tool.description or "",
+                    "input_schema": dict(tool.inputSchema or {}),
+                }
+                for tool in result.tools
+            ]
+
+
 async def call_remote_tool(url: str, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     async with streamablehttp_client(url) as streams:
         read, write = streams[0], streams[1]
