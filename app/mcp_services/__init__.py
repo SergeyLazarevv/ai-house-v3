@@ -1,1 +1,1 @@
-"""Domain MCP services used by the agent."""
+"""MCP-сервисы auth и sms (Postgres)."""

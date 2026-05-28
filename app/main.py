@@ -11,16 +11,16 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
+from app.agent import Agent
 from app.config import AppConfig
 from app.logging_config import configure_logging
-from app.orchestration.graph import run_graph
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 configure_logging()
 
 app = FastAPI(
     title="ai-house-v3",
-    description="Минимальный AI-ассистент для расследований",
+    description="AI-ассистент для расследования SMS",
 )
 
 
@@ -59,6 +59,7 @@ async def status():
     return {
         "llm": config.llm_status(),
         "provider": config.llm_provider,
+        "model": config.llm_model(),
         "mcp": {
             "auth_url": config.mcp_auth_url,
             "sms_url": config.mcp_sms_url,
@@ -72,7 +73,8 @@ async def chat(req: ChatRequest):
     if not message:
         raise HTTPException(status_code=400, detail="поле message обязательно")
     config = AppConfig.from_env()
-    response = await run_graph(message, config)
+    agent = Agent(config)
+    response = await agent.run(message)
     return ChatResponse(response=response)
 
 
@@ -115,7 +117,8 @@ async def openai_chat(req: OpenAIChatRequest):
     if not prompt:
         raise HTTPException(status_code=400, detail="не удалось извлечь текст запроса")
     config = AppConfig.from_env()
-    answer = await run_graph(prompt, config)
+    agent = Agent(config)
+    answer = await agent.run(prompt)
 
     completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
     created = int(time.time())
